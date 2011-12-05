@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="aisrecorder" default="compile">
+
+	<property name="lib" value="${basedir}/lib" />
+
+	<property name="build.dir" value="${basedir}/build" />
+	<property name="build.classes.dir" value="${build.dir}/classes" />
+	<property name="build.final.name" value="${ant.project.name}.jar" />
+
+	<property name="src.dir" value="${basedir}/src" />
+
+	<path id="compile.class.path">
+		<fileset dir="${lib}" >
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+
+	<target name="clean">
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="init">
+		<mkdir dir="${build.classes.dir}" />
+	</target>
+
+	<target name="compile" depends="init">
+		<javac destdir="${build.classes.dir}" debug="on" encoding="UTF-8">
+			<compilerarg value="-Xlint" />
+			<classpath refid="compile.class.path" />
+			<src path="${src.dir}" />
+		</javac>
+		<copy todir="${build.classes.dir}">
+			<fileset dir="${src.dir}" includes="META-INF/**"/>
+		</copy>
+	</target>
+
+	<target name="run" depends="compile">
+		<java classname="dk.frv.aisrecorder.AisRecorder" fork="true" dir="${basedir}">
+			<classpath>
+				<pathelement path="${build.classes.dir}"/>
+				<fileset dir="${lib}">
+					<include name="**/*.jar" />
+				</fileset>
+				<pathelement path="${basedir}"/>
+			</classpath>
+		</java>
+	</target>
+
+</project>
