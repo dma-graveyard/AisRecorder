@@ -43,6 +43,7 @@ public class AisRecorder {
 
 		// Create and start consumer
 		DatabaseUpdater databaseUpdater = new DatabaseUpdater(queue, settings);
+		//DatabaseUpdaterNew databaseUpdater = new DatabaseUpdaterNew(queue, settings);
 		databaseUpdater.start();
 
 		// Create the basic handler
