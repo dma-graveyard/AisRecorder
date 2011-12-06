@@ -14,6 +14,8 @@ public class MessageHandler implements IAisHandler {
 
 	private Date lastInsertErrorReported = new Date(0);
 	private BlockingQueue<QueueEntry> queue;
+	private long queuedMessages = 0;
+	private long overflowMessages = 0;
 
 	public MessageHandler(BlockingQueue<QueueEntry> queue) {
 		this.queue = queue;
@@ -26,12 +28,14 @@ public class MessageHandler implements IAisHandler {
 
 		// Try to add to queue
 		try {
-			queue.add(queueEntry);			
+			queue.add(queueEntry);
+			queuedMessages++;
 		} catch (IllegalStateException e) {
-			Date now = new Date();
+			overflowMessages++;
+			Date now = new Date();			
 			if (now.getTime() - lastInsertErrorReported.getTime() > 5000) {
 				lastInsertErrorReported = now;
-				LOG.error("Failed to insert message to queue: Queue overflow");
+				LOG.error("Failed to insert message to queue: Queue overflow (" + overflowMessages + "/" + queuedMessages + ")");
 			}
 			
 		}

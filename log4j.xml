@@ -16,6 +16,10 @@
 	<logger name="org.hibernate">
 		<level value="ERROR" />
 	</logger>
+	
+	<logger name="dk.frv.ais">
+		<level value="ERROR" />
+	</logger>
 
 	<root>
 		<appender-ref ref="CONSOLE" />
