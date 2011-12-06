@@ -9,6 +9,7 @@
 		<class>dk.frv.aisrecorder.entities.AisVesselTarget</class>
 		<class>dk.frv.aisrecorder.entities.AisClassAStatic</class>
 		<class>dk.frv.aisrecorder.entities.AisVesselStatic</class>
+		<class>dk.frv.aisrecorder.entities.AisVesselTrack</class>
 		<properties>
 			<property name="hibernate.connection.url"
 				value="jdbc:mysql://linux06:3306/enav_t" />

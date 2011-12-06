@@ -28,6 +28,7 @@ public class Settings {
 	private String dbUsername;
 	private String dbPassword;
 	private int targetTtl;
+	private int pastTrackTime;
 
 	public Settings() {
 
@@ -83,6 +84,9 @@ public class Settings {
 		
 		// Determine target TTL
 		targetTtl = getInt("target_ttl", "600");
+		
+		// Determine past track time
+		pastTrackTime = getInt("past_track_time", "7200");
 	}
 	
 	private int getInt(String key, String defaultValue) {
@@ -132,6 +136,14 @@ public class Settings {
 	
 	public int getTargetTtl() {
 		return targetTtl;
+	}
+	
+	public int getPastTrackTime() {
+		return pastTrackTime;
+	}
+	
+	public void setPastTrackTime(int pastTrackTime) {
+		this.pastTrackTime = pastTrackTime;
 	}
 	
 }

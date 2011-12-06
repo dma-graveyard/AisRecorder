@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS ais_vessel_position;
 DROP TABLE IF EXISTS ais_pos_message;
 DROP TABLE IF EXISTS ais_message;
 DROP TABLE IF EXISTS ais_vessel_target;
+DROP TABLE IF EXISTS ais_vessel_track;
 
 -- Vessel target
 CREATE TABLE ais_vessel_target (
@@ -62,6 +63,19 @@ CREATE TABLE ais_vessel_position (
 	INDEX(lat,lon),
 	INDEX(received),
 	FOREIGN KEY (mmsi) REFERENCES ais_vessel_target(mmsi)
+) ENGINE = innoDB;
+
+-- Vessels track
+CREATE TABLE ais_vessel_track (
+	id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	mmsi INT NOT NULL,
+	lat DOUBLE NOT NULL,
+	lon DOUBLE NOT NULL,
+	sog DOUBLE NOT NULL,
+	cog DOUBLE NOT NULL,
+	time DATETIME NOT NULL,
+	created DATETIME NOT NULL,
+	INDEX(mmsi, time)
 ) ENGINE = innoDB;
 
 -- Extended class A position information

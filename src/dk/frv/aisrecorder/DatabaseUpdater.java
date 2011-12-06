@@ -11,6 +11,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import javax.persistence.Query;
 
 import org.apache.log4j.Logger;
 
@@ -28,22 +29,28 @@ import dk.frv.aisrecorder.entities.AisClassAStatic;
 import dk.frv.aisrecorder.entities.AisVesselPosition;
 import dk.frv.aisrecorder.entities.AisVesselStatic;
 import dk.frv.aisrecorder.entities.AisVesselTarget;
+import dk.frv.aisrecorder.entities.AisVesselTrack;
 
 public class DatabaseUpdater extends Thread {
 
 	private static final Logger LOG = Logger.getLogger(DatabaseUpdater.class);
+	
+	private static final long PAST_TRACK_CLEANUP_INTERVAL = 60 * 1000; // 1 min
 
 	private BlockingQueue<QueueEntry> queue;
 	private int batchSize = 1;
 	private Settings settings;
 	private EntityManager entityManager = null;
 	private int targetTtl;
+	private int pastTrackTime;
+	private long lastPastTrackCleanup = 0;
 
 	public DatabaseUpdater(BlockingQueue<QueueEntry> queue, Settings settings) {
 		this.queue = queue;
 		this.settings = settings;
 		this.batchSize = settings.getBatchSize();
 		this.targetTtl = settings.getTargetTtl();
+		this.pastTrackTime = settings.getPastTrackTime();
 		prepareEntityManager();
 	}
 
@@ -247,7 +254,47 @@ public class DatabaseUpdater extends Thread {
 			classAPosition.setAisVesselPosition(vesselPosition);
 			entityManager.merge(classAPosition);
 		}
+		
+		// Add to track
+		if (vesselPosition.getLat() == null || vesselPosition.getLon() == null) {
+			return;
+		}
+		
+		Double cog = vesselPosition.getCog();
+		Double sog = vesselPosition.getSog();
+		if (cog == null) {
+			cog = 0d;
+		}
+		if (sog == null) {
+			sog = 0d;
+		}
+ 		
+		AisVesselTrack aisVesselTrack = new AisVesselTrack();
+		aisVesselTrack.setMmsi(vesselPosition.getMmsi());
+		aisVesselTrack.setLat(vesselPosition.getLat());
+		aisVesselTrack.setLon(vesselPosition.getLon());
+		aisVesselTrack.setTime(queueEntry.getReceived());
+		aisVesselTrack.setCog(cog);
+		aisVesselTrack.setSog(sog);
+		
+		entityManager.persist(aisVesselTrack);
+		
+		// Maybe cleanup
+		pastTrackCleanup();
 
+	}
+	
+	private void pastTrackCleanup() {
+		long now = System.currentTimeMillis();
+		long elapsed = now - lastPastTrackCleanup;
+		if (elapsed < PAST_TRACK_CLEANUP_INTERVAL) {
+			return;
+		}		
+		Date cleanupDate = new Date(now - pastTrackTime * 1000);
+		Query query = entityManager.createQuery("DELETE FROM AisVesselTrack vt WHERE vt.time < :cleanupDate");
+		query.setParameter("cleanupDate", cleanupDate);
+		query.executeUpdate();
+		lastPastTrackCleanup = now;
 	}
 
 	private void staticHandle(QueueEntry queueEntry, AisVesselTarget vesselTarget) {
