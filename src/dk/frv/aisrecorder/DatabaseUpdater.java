@@ -35,7 +35,7 @@ public class DatabaseUpdater extends Thread {
 
 	private static final Logger LOG = Logger.getLogger(DatabaseUpdater.class);
 	
-	private static final long PAST_TRACK_CLEANUP_INTERVAL = 60 * 1000; // 1 min
+	private static final long PAST_TRACK_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 min
 
 	private BlockingQueue<QueueEntry> queue;
 	private int batchSize = 1;
@@ -293,7 +293,8 @@ public class DatabaseUpdater extends Thread {
 		Date cleanupDate = new Date(now - pastTrackTime * 1000);
 		Query query = entityManager.createQuery("DELETE FROM AisVesselTrack vt WHERE vt.time < :cleanupDate");
 		query.setParameter("cleanupDate", cleanupDate);
-		query.executeUpdate();
+		int deleted = query.executeUpdate();
+		System.out.println("deleted: " + deleted);
 		lastPastTrackCleanup = now;
 	}
 
@@ -415,5 +416,5 @@ public class DatabaseUpdater extends Thread {
 			entityManager = null;
 		}
 	}
-
+	
 }
