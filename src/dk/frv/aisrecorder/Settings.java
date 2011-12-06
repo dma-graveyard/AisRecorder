@@ -22,6 +22,11 @@ public class Settings {
 	private int downsamplingRate;
 	private int queueSize;
 	private int batchSize;
+	private String dbHost;
+	private int dbPort;
+	private String dbName;
+	private String dbUsername;
+	private String dbPassword;
 	private int targetTtl;
 
 	public Settings() {
@@ -69,6 +74,13 @@ public class Settings {
 		// Determine batch size
 		batchSize = getInt("batch_size", "1");
 		
+		// Database details
+		dbHost = props.getProperty("db_host", "localhost");
+		dbPort = getInt("db_port", "3306");
+		dbName = props.getProperty("db_name", "");
+		dbUsername = props.getProperty("db_username","");
+		dbPassword = props.getProperty("db_password", "");
+		
 		// Determine target TTL
 		targetTtl = getInt("target_ttl", "600");
 	}
@@ -98,8 +110,28 @@ public class Settings {
 		return batchSize;
 	}
 	
+	public String getDbHost() {
+		return dbHost;
+	}
+	
+	public int getDbPort() {
+		return dbPort;
+	}
+	
+	public String getDbUsername() {
+		return dbUsername;
+	}
+	
+	public String getDbPassword() {
+		return dbPassword;
+	}
+	
+	public String getDbName() {
+		return dbName;
+	}
+	
 	public int getTargetTtl() {
 		return targetTtl;
 	}
-		
+	
 }

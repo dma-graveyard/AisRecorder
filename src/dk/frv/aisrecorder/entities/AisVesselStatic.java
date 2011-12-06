@@ -1,8 +1,17 @@
 package dk.frv.aisrecorder.entities;
 
 import java.io.Serializable;
-import javax.persistence.*;
 import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import dk.frv.ais.message.ShipTypeCargo;
 
 /**
  * The persistent class for the ais_vessel_static database table.
@@ -22,7 +31,7 @@ public class AisVesselStatic implements Serializable {
 	private short dimStern;
 	private String name;
 	private Date received;
-	private byte shipType;
+	private Byte shipType;
 	private AisClassAStatic aisClassAStatic;
 	private AisVesselTarget aisVesselTarget;
 
@@ -40,7 +49,7 @@ public class AisVesselStatic implements Serializable {
 		this.mmsi = mmsi;
 	}
 
-	@Column(nullable = false, length = 8)
+	@Column(nullable = true, length = 8)
 	public String getCallsign() {
 		return this.callsign;
 	}
@@ -58,7 +67,7 @@ public class AisVesselStatic implements Serializable {
 		this.created = created;
 	}
 
-	@Column(name = "dim_bow", nullable = false)
+	@Column(name = "dim_bow", nullable = true)
 	public short getDimBow() {
 		return this.dimBow;
 	}
@@ -67,7 +76,7 @@ public class AisVesselStatic implements Serializable {
 		this.dimBow = dimBow;
 	}
 
-	@Column(name = "dim_port", nullable = false)
+	@Column(name = "dim_port", nullable = true)
 	public byte getDimPort() {
 		return this.dimPort;
 	}
@@ -76,7 +85,7 @@ public class AisVesselStatic implements Serializable {
 		this.dimPort = dimPort;
 	}
 
-	@Column(name = "dim_starboard", nullable = false)
+	@Column(name = "dim_starboard", nullable = true)
 	public byte getDimStarboard() {
 		return this.dimStarboard;
 	}
@@ -85,7 +94,7 @@ public class AisVesselStatic implements Serializable {
 		this.dimStarboard = dimStarboard;
 	}
 
-	@Column(name = "dim_stern", nullable = false)
+	@Column(name = "dim_stern", nullable = true)
 	public short getDimStern() {
 		return this.dimStern;
 	}
@@ -94,7 +103,7 @@ public class AisVesselStatic implements Serializable {
 		this.dimStern = dimStern;
 	}
 
-	@Column(nullable = false, length = 32)
+	@Column(nullable = true, length = 32)
 	public String getName() {
 		return this.name;
 	}
@@ -112,13 +121,19 @@ public class AisVesselStatic implements Serializable {
 		this.received = received;
 	}
 
-	@Column(name = "ship_type", nullable = false)
-	public byte getShipType() {
+	@Column(name = "ship_type", nullable = true)
+	public Byte getShipType() {
 		return this.shipType;
 	}
 
-	public void setShipType(byte shipType) {
+	public void setShipType(Byte shipType) {
 		this.shipType = shipType;
+	}
+	
+	@Transient
+	public ShipTypeCargo getShipTypeCargo() {
+		Byte shipType = getShipType();
+		return new ShipTypeCargo((shipType == null) ? 0 : shipType);
 	}
 
 	// bi-directional one-to-one association to AisClassAStatic
@@ -141,5 +156,6 @@ public class AisVesselStatic implements Serializable {
 	public void setAisVesselTarget(AisVesselTarget aisVesselTarget) {
 		this.aisVesselTarget = aisVesselTarget;
 	}
+
 
 }

@@ -14,7 +14,7 @@ public class AisClassAStatic implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	private int mmsi;
-	private String distination;
+	private String destination;
 	private short draught;
 	private byte dte;
 	private Date eta;
@@ -37,12 +37,12 @@ public class AisClassAStatic implements Serializable {
 	}
 
 	@Column(length = 32)
-	public String getDistination() {
-		return this.distination;
+	public String getDestination() {
+		return this.destination;
 	}
 
-	public void setDistination(String distination) {
-		this.distination = distination;
+	public void setDestination(String destination) {
+		this.destination = destination;
 	}
 
 	@Column(nullable = false)
