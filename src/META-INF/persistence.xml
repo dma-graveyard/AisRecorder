@@ -11,10 +11,10 @@
 		<class>dk.frv.aisrecorder.entities.AisVesselStatic</class>
 		<properties>
 			<property name="hibernate.connection.url"
-				value="jdbc:mysql://linux06:3306/aisrecorder" />
+				value="jdbc:mysql://linux06:3306/enav_t" />
 			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
 			<property name="hibernate.connection.driver_class" value="com.mysql.jdbc.Driver" />			
-			<property name="hibernate.connection.username" value="aisrecorder" />
+			<property name="hibernate.connection.username" value="enav_t_user" />
 			<property name="hibernate.connection.password" value="aditus" />
 			<property name="hibernate.hbm2ddl.auto" value="update" />
 			<!-- <property name="hibernate.show_sql" value="true" /> -->

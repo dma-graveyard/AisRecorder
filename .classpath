@@ -30,7 +30,7 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.6.1.jar"/>
-	<classpathentry kind="lib" path="lib/aislib-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/aislib-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang-2.5.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

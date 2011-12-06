@@ -22,6 +22,7 @@ public class Settings {
 	private int downsamplingRate;
 	private int queueSize;
 	private int batchSize;
+	private int targetTtl;
 
 	public Settings() {
 
@@ -67,6 +68,9 @@ public class Settings {
 		
 		// Determine batch size
 		batchSize = getInt("batch_size", "1");
+		
+		// Determine target TTL
+		targetTtl = getInt("target_ttl", "600");
 	}
 	
 	private int getInt(String key, String defaultValue) {
@@ -92,6 +96,10 @@ public class Settings {
 	
 	public int getBatchSize() {
 		return batchSize;
+	}
+	
+	public int getTargetTtl() {
+		return targetTtl;
 	}
 		
 }

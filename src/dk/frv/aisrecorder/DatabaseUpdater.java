@@ -12,6 +12,8 @@ import javax.persistence.Persistence;
 
 import org.apache.log4j.Logger;
 
+import dk.frv.ais.country.CountryMapper;
+import dk.frv.ais.country.MidCountry;
 import dk.frv.ais.geo.GeoLocation;
 import dk.frv.ais.message.AisMessage;
 import dk.frv.ais.message.AisMessage18;
@@ -28,10 +30,12 @@ public class DatabaseUpdater extends Thread {
 	private BlockingQueue<QueueEntry> queue;
 	private int batchSize = 1;
 	private EntityManager entityManager = null;
+	private int targetTtl;
 
-	public DatabaseUpdater(BlockingQueue<QueueEntry> queue, int batchSize) {
+	public DatabaseUpdater(BlockingQueue<QueueEntry> queue, int batchSize, int targetTtl) {
 		this.queue = queue;
 		this.batchSize = batchSize;
+		this.targetTtl = targetTtl;
 		prepareEntityManager();
 	}
 
@@ -112,6 +116,21 @@ public class DatabaseUpdater extends Thread {
 			vesselClass = "B";
 		}
 		vesselTarget.setVesselClass(vesselClass);
+		
+		// Set valid to
+		vesselTarget.setValidTo(new Date(queueEntry.getReceived().getTime() + targetTtl * 1000));
+		
+		// Determine country
+		String str = Long.toString(aisMessage.getUserId());
+		if (str.length() == 9) {
+			str = str.substring(0, 3);
+			MidCountry country = CountryMapper.getInstance().getByMid(Integer.parseInt(str));
+			if (country != null) {
+				vesselTarget.setCountry(country.getThreeLetter());
+			}
+		}
+		
+		vesselTarget.setSource("LIVE");
 		
 		// Merging the changes to database
 		entityManager.merge(vesselTarget);
@@ -247,6 +266,10 @@ public class DatabaseUpdater extends Thread {
 
 	public void setBatchSize(int batchSize) {
 		this.batchSize = batchSize;
+	}
+	
+	public void setTargetTtl(int targetTtl) {
+		this.targetTtl = targetTtl;
 	}
 
 	private void prepareEntityManager() {

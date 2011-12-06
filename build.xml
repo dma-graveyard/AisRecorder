@@ -24,7 +24,7 @@
 	</target>
 
 	<target name="compile" depends="init">
-		<javac destdir="${build.classes.dir}" debug="on" encoding="UTF-8">
+		<javac destdir="${build.classes.dir}" debug="on" encoding="UTF-8" includeantruntime="false">
 			<compilerarg value="-Xlint" />
 			<classpath refid="compile.class.path" />
 			<src path="${src.dir}" />

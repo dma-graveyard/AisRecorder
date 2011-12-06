@@ -42,7 +42,7 @@ public class AisRecorder {
 		BlockingQueue<QueueEntry> queue = new ArrayBlockingQueue<QueueEntry>(settings.getQueueSize());
 
 		// Create and start consumer
-		DatabaseUpdater databaseUpdater = new DatabaseUpdater(queue, settings.getBatchSize());
+		DatabaseUpdater databaseUpdater = new DatabaseUpdater(queue, settings.getBatchSize(), settings.getTargetTtl());
 		databaseUpdater.start();
 
 		// Create the basic handler

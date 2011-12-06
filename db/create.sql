@@ -1,18 +1,25 @@
-DROP DATABASE aisrecorder;
-CREATE DATABASE aisrecorder;
-GRANT ALL ON aisrecorder.* TO 'aisrecorder'@'localhost';
-GRANT ALL ON aisrecorder.* TO 'aisrecorder'@'%';
-USE aisrecorder;
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
 -- Vessel target
+DROP TABLE IF EXISTS ais_vessel_target;
 CREATE TABLE ais_vessel_target (
 	mmsi INT NOT NULL PRIMARY KEY,
+	id INT NOT NULL AUTO_INCREMENT,
 	vessel_class ENUM('A','B') NOT NULL DEFAULT 'A',
-	last_received DATETIME NULL,
-	created DATETIME NOT NULL
+	country CHAR(3) NULL,
+	source VARCHAR(4) NOT NULL DEFAULT 'LIVE',
+	last_received DATETIME NOT NULL,
+	valid_to DATETIME NOT NULL,
+	created DATETIME NOT NULL,
+	INDEX(id),
+	INDEX(country),
+	INDEX(valid_to)
 ) ENGINE = innoDB;
 
 -- Raw AIS message table
+DROP TABLE IF EXISTS ais_message;
 CREATE TABLE ais_message (
 	id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	mmsi INT NOT NULL,
@@ -24,6 +31,7 @@ CREATE TABLE ais_message (
 ) ENGINE = innoDB;
 
 -- AIS position message information
+DROP TABLE IF EXISTS ais_pos_message;
 CREATE TABLE ais_pos_message (
 	ais_message INT NOT NULL PRIMARY KEY,
 	lat DOUBLE NULL,
@@ -33,6 +41,7 @@ CREATE TABLE ais_pos_message (
 ) ENGINE = innoDB;
 	
 -- Current vessel target position
+DROP TABLE IF EXISTS ais_vessel_position;
 CREATE TABLE ais_vessel_position (
 	mmsi INT NOT NULL PRIMARY KEY,
 	lat DOUBLE NULL,
@@ -52,6 +61,7 @@ CREATE TABLE ais_vessel_position (
 ) ENGINE = innoDB;
 
 -- Extended class A position information
+DROP TABLE IF EXISTS ais_class_a_position;
 CREATE TABLE ais_class_a_position (
 	mmsi INT NOT NULL PRIMARY KEY,
 	nav_status TINYINT NOT NULL,
@@ -61,6 +71,7 @@ CREATE TABLE ais_class_a_position (
 ) ENGINE = innoDB;
 
 -- Current vessel target statics
+DROP TABLE IF EXISTS ais_vessel_static;
 CREATE TABLE ais_vessel_static (
 	mmsi INT NOT NULL PRIMARY KEY,
 	name VARCHAR(32) NOT NULL,
@@ -76,6 +87,7 @@ CREATE TABLE ais_vessel_static (
 ) ENGINE = innoDB;
 
 -- Extended class A statics
+DROP TABLE IF EXISTS ais_class_a_static;
 CREATE TABLE ais_class_a_static (
 	mmsi INT NOT NULL PRIMARY KEY,
 	version TINYINT NOT NULL,
@@ -87,3 +99,7 @@ CREATE TABLE ais_class_a_static (
 	dte TINYINT NOT NULL,
 	FOREIGN KEY (mmsi) REFERENCES ais_vessel_static(mmsi)
 ) ENGINE = innoDB;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
