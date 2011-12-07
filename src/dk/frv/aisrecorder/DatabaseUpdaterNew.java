@@ -80,9 +80,13 @@ public class DatabaseUpdaterNew extends Thread {
 					LOG.error("Failed to get message of queue: " + e.getMessage());
 				}
 			}
-
+			
 			// Handle messages
-			batchHandle(batch);
+			try {
+				batchHandle(batch);
+			} catch (Exception e) {
+				LOG.error("Error while handling batch: " + e.getMessage());				
+			}
 
 		}
 
@@ -90,7 +94,13 @@ public class DatabaseUpdaterNew extends Thread {
 
 	private void batchHandle(List<QueueEntry> batch) {
 		// Open session
-		session = sqlSessionFactory.openSession();
+		try {
+			session = sqlSessionFactory.openSession(false);
+		} catch (Exception e) {
+			LOG.error("Could not open DB session: " + e.getMessage());
+			AisRecorder.sleep(5000);
+			return;
+		}
 
 		try {
 			// Handle individual message
