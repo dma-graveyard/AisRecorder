@@ -21,6 +21,14 @@
 		<level value="ERROR" />
 	</logger>
 
+	<logger name="java.sql">
+		<level value="ERROR" />
+	</logger>
+
+	<logger name="org.apache.ibatis">
+		<level value="ERROR" />
+	</logger>
+
 	<root>
 		<appender-ref ref="CONSOLE" />
 	</root>

@@ -89,6 +89,10 @@ public class Settings {
 		pastTrackTime = getInt("past_track_time", "7200");
 	}
 	
+	public Properties getProps() {
+		return props;
+	}
+	
 	private int getInt(String key, String defaultValue) {
 		String val = props.getProperty(key, defaultValue);
 		return Integer.parseInt(val);

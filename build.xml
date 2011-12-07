@@ -31,6 +31,7 @@
 		</javac>
 		<copy todir="${build.classes.dir}">
 			<fileset dir="${src.dir}" includes="META-INF/**"/>
+			<fileset dir="${src.dir}" includes="**/*.xml"/>
 		</copy>
 	</target>
 
