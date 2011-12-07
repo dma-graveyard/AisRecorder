@@ -1,8 +1,8 @@
 package dk.frv.aisrecorder;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -16,7 +16,7 @@ public class DatabaseUpdaterNew extends Thread {
 	private int batchSize = 1;
 	private int targetTtl;
 	private int pastTrackTime;
-	
+	private long startTime;	
 	private long messageCount = 0;
 	
 	public DatabaseUpdaterNew(BlockingQueue<QueueEntry> queue, Settings settings) {
@@ -28,7 +28,8 @@ public class DatabaseUpdaterNew extends Thread {
 	}
 	
 	@Override
-	public void run() {
+	public void run() {		
+		startTime = System.currentTimeMillis();
 
 		List<QueueEntry> batch = new ArrayList<QueueEntry>();
 
@@ -74,7 +75,9 @@ public class DatabaseUpdaterNew extends Thread {
 	
 	
 		if (messageCount % 1000 == 0) {
-			System.out.println("date: " + (new Date()) + " messages: " + messageCount);
+			long elasped = System.currentTimeMillis() - startTime;
+			double msgSec = (double)messageCount / (double)(elasped / 1000); 
+			System.out.println(String.format(Locale.US, "Msg/sec: %.2f", msgSec));
 		}
 	
 	}

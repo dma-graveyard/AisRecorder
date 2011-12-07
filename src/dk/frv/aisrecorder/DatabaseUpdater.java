@@ -273,7 +273,12 @@ public class DatabaseUpdater extends Thread {
 		aisVesselTrack.setMmsi(vesselPosition.getMmsi());
 		aisVesselTrack.setLat(vesselPosition.getLat());
 		aisVesselTrack.setLon(vesselPosition.getLon());
-		aisVesselTrack.setTime(queueEntry.getReceived());
+		// Time is source timestamp if it exists
+		if (vesselPosition.getSourceTimestamp() != null) {
+			aisVesselTrack.setTime(vesselPosition.getSourceTimestamp());
+		} else {
+			aisVesselTrack.setTime(queueEntry.getReceived());
+		}
 		aisVesselTrack.setCog(cog);
 		aisVesselTrack.setSog(sog);
 		
