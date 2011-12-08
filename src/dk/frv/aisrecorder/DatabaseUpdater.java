@@ -41,44 +41,35 @@ public class DatabaseUpdater extends Thread {
 
 	private static final Logger LOG = Logger.getLogger(DatabaseUpdater.class);
 	
-	private static final long PAST_TRACK_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 min
-
 	private BlockingQueue<QueueEntry> queue;
-	private Settings settings;
 	private int batchSize = 1;
 	private int targetTtl;
-	private int pastTrackTime;
 	private long startTime;
 	private long messageCount = 0;
-	private long lastPastTrackCleanup = 0;
-
 	private SqlSessionFactory sqlSessionFactory;
 	private SqlSession session;
+	private PastTrackCleanup pastTrackCleanup;
 
 	public DatabaseUpdater(BlockingQueue<QueueEntry> queue, Settings settings) {
+		try {
+			String resource = "dk/frv/aisrecorder/persistence/xml/Configuration.xml";
+			Reader reader = Resources.getResourceAsReader(resource);
+			sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader, settings.getProps());
+		} catch (IOException e) {
+			LOG.error("Could not create SqlSessionFactory: " + e.getMessage());
+			System.exit(1);
+		}
+		
 		this.queue = queue;
-		this.settings = settings;
 		this.batchSize = settings.getBatchSize();
-		this.targetTtl = settings.getTargetTtl();
-		this.pastTrackTime = settings.getPastTrackTime();
-	}
-
-	private void createSessionFactory() throws IOException {
-		String resource = "dk/frv/aisrecorder/persistence/xml/Configuration.xml";
-		Reader reader = Resources.getResourceAsReader(resource);
-		sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader, settings.getProps());
+		this.targetTtl = settings.getTargetTtl();		
+		pastTrackCleanup = new PastTrackCleanup(sqlSessionFactory, settings.getPastTrackTime());
+		pastTrackCleanup.start();
 	}
 
 	@Override
 	public void run() {
 		startTime = System.currentTimeMillis();
-
-		try {
-			createSessionFactory();
-		} catch (IOException e) {
-			LOG.error("Could not create SqlSessionFactory: " + e.getMessage());
-			System.exit(1);
-		}
 
 		List<QueueEntry> batch = new ArrayList<QueueEntry>();
 
@@ -339,27 +330,9 @@ public class DatabaseUpdater extends Thread {
 		aisVesselTrack.setSog(sog);
 		
 		// Insert past track
-		aisVesselTrackMapper.insert(aisVesselTrack);
-		
-		// Maybe cleanup
-		pastTrackCleanup();
-
+		aisVesselTrackMapper.insert(aisVesselTrack);		
 	}
-	
-	private void pastTrackCleanup() {
-		long now = System.currentTimeMillis();
-		long elapsed = now - lastPastTrackCleanup;
-		if (elapsed < PAST_TRACK_CLEANUP_INTERVAL) {
-			return;
-		}		
-		Date cleanupDate = new Date(now - pastTrackTime * 1000);
 		
-		AisVesselTrackMapper aisVesselTrackMapper = session.getMapper(AisVesselTrackMapper.class);
-		int deleted = aisVesselTrackMapper.deleteOld(cleanupDate);
-		System.out.println("deleted: " + deleted);
-		lastPastTrackCleanup = now;
-	}
-	
 	private void staticHandle(QueueEntry queueEntry, AisVesselTarget vesselTarget) {
 		AisMessage aisMessage = queueEntry.getAisMessage();
 		
