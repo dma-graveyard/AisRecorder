@@ -7,7 +7,7 @@
 
 	<context id="mysql" targetRuntime="MyBatis3">
 		<jdbcConnection driverClass="com.mysql.jdbc.Driver"
-			connectionURL="jdbc:mysql://localhost:3306/enav_t" userId="enav_t_user"
+			connectionURL="jdbc:mysql://linux06:3306/enav_t" userId="enav_t_user"
 			password="aditus">
 		</jdbcConnection>
 
@@ -65,6 +65,14 @@
 			enableUpdateByExample="false" enableSelectByPrimaryKey="true">
 			<property name="useActualColumnNames" value="false" />
 		</table>
+
+		<table schema="mysql" tableName="ais_vessel_track"
+                        domainObjectName="AisVesselTrack" enableDeleteByExample="false"
+                        enableCountByExample="false" enableSelectByExample="false"
+                        enableUpdateByExample="false" enableSelectByPrimaryKey="true">
+                        <property name="useActualColumnNames" value="false" />
+                </table>
+
 
 	</context>
 </generatorConfiguration>

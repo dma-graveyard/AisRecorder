@@ -17,5 +17,10 @@ PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
 	</environments>
 	<mappers>
 		<mapper resource="dk/frv/aisrecorder/persistence/xml/AisVesselTargetMapper.xml" />
+		<mapper resource="dk/frv/aisrecorder/persistence/xml/AisVesselPositionMapper.xml" />
+		<mapper resource="dk/frv/aisrecorder/persistence/xml/AisVesselStaticMapper.xml" />
+		<mapper resource="dk/frv/aisrecorder/persistence/xml/AisClassAPositionMapper.xml" />
+		<mapper resource="dk/frv/aisrecorder/persistence/xml/AisClassAStaticMapper.xml" />
+		<mapper resource="dk/frv/aisrecorder/persistence/xml/AisVesselTrackMapper.xml" />
 	</mappers>
 </configuration>
