@@ -1,18 +1,17 @@
 package dk.frv.aisrecorder;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
-
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.log4j.Logger;
 
 import dk.frv.ais.country.CountryMapper;
@@ -23,13 +22,20 @@ import dk.frv.ais.message.AisMessage18;
 import dk.frv.ais.message.AisMessage24;
 import dk.frv.ais.message.AisMessage5;
 import dk.frv.ais.message.AisPositionMessage;
+import dk.frv.ais.message.ShipTypeCargo;
 import dk.frv.ais.proprietary.IProprietarySourceTag;
-import dk.frv.aisrecorder.entities.AisClassAPosition;
-import dk.frv.aisrecorder.entities.AisClassAStatic;
-import dk.frv.aisrecorder.entities.AisVesselPosition;
-import dk.frv.aisrecorder.entities.AisVesselStatic;
-import dk.frv.aisrecorder.entities.AisVesselTarget;
-import dk.frv.aisrecorder.entities.AisVesselTrack;
+import dk.frv.aisrecorder.persistence.domain.AisClassAPosition;
+import dk.frv.aisrecorder.persistence.domain.AisClassAStatic;
+import dk.frv.aisrecorder.persistence.domain.AisVesselPosition;
+import dk.frv.aisrecorder.persistence.domain.AisVesselStatic;
+import dk.frv.aisrecorder.persistence.domain.AisVesselTarget;
+import dk.frv.aisrecorder.persistence.domain.AisVesselTrack;
+import dk.frv.aisrecorder.persistence.mapper.AisClassAPositionMapper;
+import dk.frv.aisrecorder.persistence.mapper.AisClassAStaticMapper;
+import dk.frv.aisrecorder.persistence.mapper.AisVesselPositionMapper;
+import dk.frv.aisrecorder.persistence.mapper.AisVesselStaticMapper;
+import dk.frv.aisrecorder.persistence.mapper.AisVesselTargetMapper;
+import dk.frv.aisrecorder.persistence.mapper.AisVesselTrackMapper;
 
 public class DatabaseUpdater extends Thread {
 
@@ -38,12 +44,16 @@ public class DatabaseUpdater extends Thread {
 	private static final long PAST_TRACK_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 min
 
 	private BlockingQueue<QueueEntry> queue;
-	private int batchSize = 1;
 	private Settings settings;
-	private EntityManager entityManager = null;
+	private int batchSize = 1;
 	private int targetTtl;
 	private int pastTrackTime;
+	private long startTime;
+	private long messageCount = 0;
 	private long lastPastTrackCleanup = 0;
+
+	private SqlSessionFactory sqlSessionFactory;
+	private SqlSession session;
 
 	public DatabaseUpdater(BlockingQueue<QueueEntry> queue, Settings settings) {
 		this.queue = queue;
@@ -51,11 +61,24 @@ public class DatabaseUpdater extends Thread {
 		this.batchSize = settings.getBatchSize();
 		this.targetTtl = settings.getTargetTtl();
 		this.pastTrackTime = settings.getPastTrackTime();
-		prepareEntityManager();
+	}
+
+	private void createSessionFactory() throws IOException {
+		String resource = "dk/frv/aisrecorder/persistence/xml/Configuration.xml";
+		Reader reader = Resources.getResourceAsReader(resource);
+		sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader, settings.getProps());
 	}
 
 	@Override
 	public void run() {
+		startTime = System.currentTimeMillis();
+
+		try {
+			createSessionFactory();
+		} catch (IOException e) {
+			LOG.error("Could not create SqlSessionFactory: " + e.getMessage());
+			System.exit(1);
+		}
 
 		List<QueueEntry> batch = new ArrayList<QueueEntry>();
 
@@ -77,39 +100,49 @@ public class DatabaseUpdater extends Thread {
 					LOG.error("Failed to get message of queue: " + e.getMessage());
 				}
 			}
-
+			
 			// Handle messages
-			batchHandle(batch);
+			try {
+				batchHandle(batch);
+			} catch (Exception e) {
+				LOG.error("Error while handling batch: " + e.getMessage());				
+			}
 
 		}
 
 	}
 
 	private void batchHandle(List<QueueEntry> batch) {
-		// Make sure entity manager exists
-		prepareEntityManager();
+		// Open session
+		try {
+			session = sqlSessionFactory.openSession(false);
+		} catch (Exception e) {
+			LOG.error("Could not open DB session: " + e.getMessage());
+			AisRecorder.sleep(5000);
+			return;
+		}
 
 		try {
-			// Start transaction
-			EntityTransaction entr = entityManager.getTransaction();
-			entr.begin();
-
 			// Handle individual message
 			for (QueueEntry queueEntry : batch) {
 				messageHandle(queueEntry);
 			}
-
-			// Commit transaction
-			entr.commit();
-		} catch (Exception e) {
-			LOG.error("Caught exception " + e.getClass() + ": " + e.getMessage());
-			e.printStackTrace();
-			invalidateEntityManager();
+			// Commit
+			session.commit();
+		} finally {
+			session.close();
 		}
 
 	}
 
 	private void messageHandle(QueueEntry queueEntry) {
+		messageCount++;
+		if (messageCount % 5000 == 0) {
+			long elasped = System.currentTimeMillis() - startTime;
+			double msgSec = (double) messageCount / (double) (elasped / 1000);
+			LOG.debug(String.format(Locale.US, "Msg/sec: %.2f", msgSec));
+		}
+
 		AisMessage aisMessage = queueEntry.getAisMessage();
 
 		// Only handle pos and static messages
@@ -118,11 +151,13 @@ public class DatabaseUpdater extends Thread {
 		if (!posMessage && !staticMessage) {
 			return;
 		}
-
+		
 		// Get or create AisVesselTarget
-		AisVesselTarget vesselTarget = entityManager.find(AisVesselTarget.class, (int) aisMessage.getUserId());
+		AisVesselTargetMapper mapper = session.getMapper(AisVesselTargetMapper.class);
+		AisVesselTarget vesselTarget = mapper.selectByPrimaryKey((int) aisMessage.getUserId());
 		if (vesselTarget == null) {
 			vesselTarget = new AisVesselTarget();
+			vesselTarget.setCreated(new Date());
 			vesselTarget.setMmsi((int) aisMessage.getUserId());
 		}
 		vesselTarget.setLastReceived(queueEntry.getReceived());
@@ -146,10 +181,14 @@ public class DatabaseUpdater extends Thread {
 		}
 
 		vesselTarget.setSource("LIVE");
-
-		// Merging the changes to database
-		entityManager.merge(vesselTarget);
-
+		
+		// Insert or update
+		if (vesselTarget.getId() == null) {
+			mapper.insert(vesselTarget);
+		} else {
+			mapper.updateByPrimaryKey(vesselTarget);
+		}
+		
 		if (posMessage) {
 			// Handle position message
 			positionHandle(queueEntry, vesselTarget);
@@ -159,13 +198,21 @@ public class DatabaseUpdater extends Thread {
 		}
 
 	}
-
+	
 	private void positionHandle(QueueEntry queueEntry, AisVesselTarget vesselTarget) {
 		AisMessage aisMessage = queueEntry.getAisMessage();
-
+		
+		// Mappers
+		AisVesselPositionMapper aisVesselPositionMapper = session.getMapper(AisVesselPositionMapper.class);
+		AisClassAPositionMapper aisClassAPositionMapper = session.getMapper(AisClassAPositionMapper.class);
+		AisVesselTrackMapper aisVesselTrackMapper = session.getMapper(AisVesselTrackMapper.class);
+		boolean createPos = false;
+		boolean createAPos = false;
+		
 		// Get or create AisVesselPosition
-		AisVesselPosition vesselPosition = vesselTarget.getAisVesselPosition();
+		AisVesselPosition vesselPosition =  aisVesselPositionMapper.selectByPrimaryKey(vesselTarget.getMmsi());			
 		if (vesselPosition == null) {
+			createPos = true;
 			vesselPosition = new AisVesselPosition();
 			vesselPosition.setMmsi(vesselTarget.getMmsi());
 			vesselPosition.setCreated(new Date());
@@ -176,7 +223,7 @@ public class DatabaseUpdater extends Thread {
 		if (tag != null) {
 			vesselPosition.setSourceTimestamp(tag.getTimestamp());
 		}
-
+		
 		AisClassAPosition classAPosition = null;
 
 		if (aisMessage instanceof AisPositionMessage) {
@@ -207,8 +254,9 @@ public class DatabaseUpdater extends Thread {
 			vesselPosition.setUtcSec((byte) posMessage.getUtcSec());
 
 			// Class A info
-			classAPosition = vesselPosition.getAisClassAPosition();
+			classAPosition = aisClassAPositionMapper.selectByPrimaryKey(vesselTarget.getMmsi());
 			if (classAPosition == null) {
+				createAPos = true;
 				classAPosition = new AisClassAPosition();
 				classAPosition.setMmsi(vesselPosition.getMmsi());
 			}
@@ -245,14 +293,21 @@ public class DatabaseUpdater extends Thread {
 			// UTC sec
 			vesselPosition.setUtcSec((byte) posMessage.getUtcSec());
 		}
-
-		vesselPosition.setAisVesselTarget(vesselTarget);
-		entityManager.merge(vesselPosition);
-
-		// Handle class A
+		
+		// Insert or update position
+		if (createPos) {
+			aisVesselPositionMapper.insert(vesselPosition);
+		} else {
+			aisVesselPositionMapper.updateByPrimaryKey(vesselPosition);
+		}
+		
 		if (classAPosition != null) {
-			classAPosition.setAisVesselPosition(vesselPosition);
-			entityManager.merge(classAPosition);
+			// Insert or update
+			if (createAPos) {
+				aisClassAPositionMapper.insert(classAPosition);
+			} else {
+				aisClassAPositionMapper.updateByPrimaryKey(classAPosition);
+			}
 		}
 		
 		// Add to track
@@ -268,8 +323,9 @@ public class DatabaseUpdater extends Thread {
 		if (sog == null) {
 			sog = 0d;
 		}
- 		
+		
 		AisVesselTrack aisVesselTrack = new AisVesselTrack();
+		aisVesselTrack.setCreated(new Date());
 		aisVesselTrack.setMmsi(vesselPosition.getMmsi());
 		aisVesselTrack.setLat(vesselPosition.getLat());
 		aisVesselTrack.setLon(vesselPosition.getLon());
@@ -282,7 +338,8 @@ public class DatabaseUpdater extends Thread {
 		aisVesselTrack.setCog(cog);
 		aisVesselTrack.setSog(sog);
 		
-		entityManager.persist(aisVesselTrack);
+		// Insert past track
+		aisVesselTrackMapper.insert(aisVesselTrack);
 		
 		// Maybe cleanup
 		pastTrackCleanup();
@@ -296,27 +353,33 @@ public class DatabaseUpdater extends Thread {
 			return;
 		}		
 		Date cleanupDate = new Date(now - pastTrackTime * 1000);
-		Query query = entityManager.createQuery("DELETE FROM AisVesselTrack vt WHERE vt.time < :cleanupDate");
-		query.setParameter("cleanupDate", cleanupDate);
-		int deleted = query.executeUpdate();
+		
+		AisVesselTrackMapper aisVesselTrackMapper = session.getMapper(AisVesselTrackMapper.class);
+		int deleted = aisVesselTrackMapper.deleteOld(cleanupDate);
 		System.out.println("deleted: " + deleted);
 		lastPastTrackCleanup = now;
 	}
-
+	
 	private void staticHandle(QueueEntry queueEntry, AisVesselTarget vesselTarget) {
 		AisMessage aisMessage = queueEntry.getAisMessage();
-
-		// Get or create AisVesselStatic
-		AisVesselStatic vesselStatic = vesselTarget.getAisVesselStatic();
+		
+		// Mappers
+		AisVesselStaticMapper aisVesselStaticMapper = session.getMapper(AisVesselStaticMapper.class);
+		AisClassAStaticMapper aisClassAStaticMapper = session.getMapper(AisClassAStaticMapper.class);
+		boolean createStatic = false;
+		boolean createStaticA = false;
+		
+		AisVesselStatic vesselStatic = aisVesselStaticMapper.selectByPrimaryKey(vesselTarget.getMmsi());
 		if (vesselStatic == null) {
+			createStatic = true;
 			vesselStatic = new AisVesselStatic();
 			vesselStatic.setMmsi(vesselTarget.getMmsi());
 			vesselStatic.setCreated(new Date());
 		}
 		vesselStatic.setReceived(queueEntry.getReceived());
-
+		
 		AisClassAStatic classAStatic = null;
-
+		
 		if (aisMessage instanceof AisMessage24) {
 			// Class B
 			AisMessage24 msg24 = (AisMessage24) aisMessage;
@@ -328,7 +391,10 @@ public class DatabaseUpdater extends Thread {
 				vesselStatic.setDimPort((byte) msg24.getDimPort());
 				vesselStatic.setDimStarboard((byte) msg24.getDimStarboard());
 				vesselStatic.setDimStern((short) msg24.getDimStern());
-				vesselStatic.setShipType((byte) msg24.getShipType());
+				vesselStatic.setShipType((byte) msg24.getShipType());								
+				ShipTypeCargo shipTypeCargo = new ShipTypeCargo(msg24.getShipType());
+				vesselStatic.setDecodedShipType((byte)shipTypeCargo.getShipType().ordinal());
+				vesselStatic.setCargo((byte)shipTypeCargo.getShipCargo().ordinal());
 			}
 		} else {
 			// Class A
@@ -340,10 +406,14 @@ public class DatabaseUpdater extends Thread {
 			vesselStatic.setDimStarboard((byte) msg5.getDimStarboard());
 			vesselStatic.setDimStern((short) msg5.getDimStern());
 			vesselStatic.setShipType((byte) msg5.getShipType());
+			ShipTypeCargo shipTypeCargo = new ShipTypeCargo(msg5.getShipType());
+			vesselStatic.setDecodedShipType((byte)shipTypeCargo.getShipType().ordinal());
+			vesselStatic.setCargo((byte)shipTypeCargo.getShipCargo().ordinal());
 
 			// Class A specifics
-			classAStatic = vesselStatic.getAisClassAStatic();
+			classAStatic = aisClassAStaticMapper.selectByPrimaryKey(vesselTarget.getMmsi());			
 			if (classAStatic == null) {
+				createStaticA = true;
 				classAStatic = new AisClassAStatic();
 				classAStatic.setMmsi(vesselStatic.getMmsi());
 			}
@@ -360,17 +430,22 @@ public class DatabaseUpdater extends Thread {
 		vesselStatic.setName(AisMessage.trimText(vesselStatic.getName()));
 		vesselStatic.setCallsign(AisMessage.trimText(vesselStatic.getCallsign()));
 
-		vesselStatic.setAisVesselTarget(vesselTarget);
-		entityManager.merge(vesselStatic);
-
-		// Handle class A
-		if (classAStatic != null) {
-			classAStatic.setAisVesselStatic(vesselStatic);
-			entityManager.merge(classAStatic);
+		if (createStatic) {
+			aisVesselStaticMapper.insert(vesselStatic);
+		} else {
+			aisVesselStaticMapper.updateByPrimaryKey(vesselStatic);
 		}
-
-	}
-
+		
+		if (classAStatic != null) {
+			if (createStaticA) {
+				aisClassAStaticMapper.insert(classAStatic);
+			} else {
+				aisClassAStaticMapper.updateByPrimaryKey(classAStatic);
+			}
+		}
+		
+	}	
+	
 	private static boolean isStaticMessage(AisMessage aisMessage) {
 		return (aisMessage.getMsgId() == 5 || aisMessage.getMsgId() == 24);
 	}
@@ -387,39 +462,4 @@ public class DatabaseUpdater extends Thread {
 		}
 	}
 
-	public void setBatchSize(int batchSize) {
-		this.batchSize = batchSize;
-	}
-
-	public void setTargetTtl(int targetTtl) {
-		this.targetTtl = targetTtl;
-	}
-
-	private void prepareEntityManager() {
-		if (entityManager != null) {
-			return;
-		}
-		Map<String, String> dbProps = new HashMap<String, String>();
-		dbProps.put("hibernate.connection.url", "jdbc:mysql://" + settings.getDbHost() + ":" + settings.getDbPort() + "/"
-				+ settings.getDbName());
-		dbProps.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
-		dbProps.put("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
-		dbProps.put("hibernate.connection.username", settings.getDbUsername());
-		dbProps.put("hibernate.connection.password", settings.getDbPassword());
-		dbProps.put("hibernate.hbm2ddl.auto", "update");
-		EntityManagerFactory emf = Persistence.createEntityManagerFactory("aisrecorder", dbProps);
-		entityManager = emf.createEntityManager();
-	}
-
-	private void invalidateEntityManager() {
-		if (entityManager != null) {
-			try {
-				entityManager.close();
-			} catch (Exception e) {
-				LOG.error("Failed to close entity manager: " + e.getMessage());
-			}
-			entityManager = null;
-		}
-	}
-	
 }

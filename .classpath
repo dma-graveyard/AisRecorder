@@ -7,32 +7,11 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
-	<classpathentry kind="con" path="org.eclipse.datatools.connectivity.jdt.DRIVERLIBRARY/MySQL JDBC Driver"/>
-	<classpathentry kind="lib" path="lib/hibernate/antlr-2.7.6.jar">
-		<attributes>
-			<attribute name="org.eclipse.jst.component.dependency" value="../"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/hibernate/commons-collections-3.1.jar">
-		<attributes>
-			<attribute name="org.eclipse.jst.component.dependency" value="../"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/hibernate/dom4j-1.6.1.jar"/>
-	<classpathentry kind="lib" path="lib/hibernate/hibernate3.jar"/>
-	<classpathentry kind="lib" path="lib/hibernate/javassist-3.12.0.GA.jar"/>
-	<classpathentry kind="lib" path="lib/hibernate/jta-1.1.jar"/>
-	<classpathentry kind="lib" path="lib/hibernate/slf4j-api-1.6.1.jar"/>
-	<classpathentry kind="lib" path="lib/hibernate/hibernate-jpa-2.0-api-1.0.0.Final.jar">
-		<attributes>
-			<attribute name="org.eclipse.jst.component.dependency" value="../"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.6.1.jar"/>
 	<classpathentry kind="lib" path="lib/aislib-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang-2.5.jar"/>
-	<classpathentry kind="lib" path="lib/mysql/mysql-connector-java-5.1.15-bin.jar"/>
 	<classpathentry kind="lib" path="lib/mybatis-3.0.6.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.15-bin.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>
