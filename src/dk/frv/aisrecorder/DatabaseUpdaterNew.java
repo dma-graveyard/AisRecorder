@@ -157,6 +157,7 @@ public class DatabaseUpdaterNew extends Thread {
 		AisVesselTarget vesselTarget = mapper.selectByPrimaryKey((int) aisMessage.getUserId());
 		if (vesselTarget == null) {
 			vesselTarget = new AisVesselTarget();
+			vesselTarget.setCreated(new Date());
 			vesselTarget.setMmsi((int) aisMessage.getUserId());
 		}
 		vesselTarget.setLastReceived(queueEntry.getReceived());
@@ -390,8 +391,7 @@ public class DatabaseUpdaterNew extends Thread {
 				vesselStatic.setDimPort((byte) msg24.getDimPort());
 				vesselStatic.setDimStarboard((byte) msg24.getDimStarboard());
 				vesselStatic.setDimStern((short) msg24.getDimStern());
-				vesselStatic.setShipType((byte) msg24.getShipType());
-				
+				vesselStatic.setShipType((byte) msg24.getShipType());								
 				ShipTypeCargo shipTypeCargo = new ShipTypeCargo(msg24.getShipType());
 				vesselStatic.setDecodedShipType((byte)shipTypeCargo.getShipType().ordinal());
 				vesselStatic.setCargo((byte)shipTypeCargo.getShipCargo().ordinal());
@@ -406,6 +406,9 @@ public class DatabaseUpdaterNew extends Thread {
 			vesselStatic.setDimStarboard((byte) msg5.getDimStarboard());
 			vesselStatic.setDimStern((short) msg5.getDimStern());
 			vesselStatic.setShipType((byte) msg5.getShipType());
+			ShipTypeCargo shipTypeCargo = new ShipTypeCargo(msg5.getShipType());
+			vesselStatic.setDecodedShipType((byte)shipTypeCargo.getShipType().ordinal());
+			vesselStatic.setCargo((byte)shipTypeCargo.getShipCargo().ordinal());
 
 			// Class A specifics
 			classAStatic = aisClassAStaticMapper.selectByPrimaryKey(vesselTarget.getMmsi());			
