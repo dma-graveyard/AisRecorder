@@ -43,7 +43,7 @@ public class PastTrackCleanup extends Thread {
 		try {
 			AisVesselTrackMapper aisVesselTrackMapper = session.getMapper(AisVesselTrackMapper.class);
 			int deleted = aisVesselTrackMapper.deleteOld(cleanupDate);
-			System.out.println("deleted: " + deleted);
+			LOG.debug("Past track deleted: " + deleted);
 			session.commit();
 		} finally {
 			session.close();

@@ -27,7 +27,8 @@ public class Settings {
 	private String dbName;
 	private String dbUsername;
 	private String dbPassword;
-	private int targetTtl;
+	private int liveTargetTtl;
+	private int satTargetTtl;
 	private int pastTrackTime;
 
 	public Settings() {
@@ -82,8 +83,11 @@ public class Settings {
 		dbUsername = props.getProperty("db_username","");
 		dbPassword = props.getProperty("db_password", "");
 		
-		// Determine target TTL
-		targetTtl = getInt("target_ttl", "600");
+		// Determine LIVE target TTL
+		liveTargetTtl = getInt("live_target_ttl", "1200");
+		
+		// Determine SAT target TTL
+		satTargetTtl = getInt("sat_target_ttl", "172800");
 		
 		// Determine past track time
 		pastTrackTime = getInt("past_track_time", "7200");
@@ -137,9 +141,13 @@ public class Settings {
 	public String getDbName() {
 		return dbName;
 	}
+
+	public int getLiveTargetTtl() {
+		return liveTargetTtl;
+	}
 	
-	public int getTargetTtl() {
-		return targetTtl;
+	public int getSatTargetTtl() {
+		return satTargetTtl;
 	}
 	
 	public int getPastTrackTime() {

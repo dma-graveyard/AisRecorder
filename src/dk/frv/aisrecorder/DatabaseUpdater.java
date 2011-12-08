@@ -43,9 +43,9 @@ public class DatabaseUpdater extends Thread {
 	
 	private BlockingQueue<QueueEntry> queue;
 	private int batchSize = 1;
-	private int targetTtl;
 	private long startTime;
 	private long messageCount = 0;
+	private Settings settings;
 	private SqlSessionFactory sqlSessionFactory;
 	private SqlSession session;
 	private PastTrackCleanup pastTrackCleanup;
@@ -59,10 +59,9 @@ public class DatabaseUpdater extends Thread {
 			LOG.error("Could not create SqlSessionFactory: " + e.getMessage());
 			System.exit(1);
 		}
-		
+		this.settings = settings;
 		this.queue = queue;
 		this.batchSize = settings.getBatchSize();
-		this.targetTtl = settings.getTargetTtl();		
 		pastTrackCleanup = new PastTrackCleanup(sqlSessionFactory, settings.getPastTrackTime());
 		pastTrackCleanup.start();
 	}
@@ -158,9 +157,6 @@ public class DatabaseUpdater extends Thread {
 		}
 		vesselTarget.setVesselClass(vesselClass);
 
-		// Set valid to
-		vesselTarget.setValidTo(new Date(queueEntry.getReceived().getTime() + targetTtl * 1000));
-
 		// Determine country
 		String str = Long.toString(aisMessage.getUserId());
 		if (str.length() == 9) {
@@ -170,8 +166,16 @@ public class DatabaseUpdater extends Thread {
 				vesselTarget.setCountry(country.getThreeLetter());
 			}
 		}
-
-		vesselTarget.setSource("LIVE");
+		
+		// Determine source
+		vesselTarget.setSource(queueEntry.getSource());
+		
+		// Set valid to based on source 
+		long targetTtl = settings.getLiveTargetTtl();
+		if (vesselTarget.getSource().equals("SAT")) {
+			targetTtl = settings.getSatTargetTtl();
+		}
+		vesselTarget.setValidTo(new Date(queueEntry.getReceived().getTime() + targetTtl * 1000));
 		
 		// Insert or update
 		if (vesselTarget.getId() == null) {

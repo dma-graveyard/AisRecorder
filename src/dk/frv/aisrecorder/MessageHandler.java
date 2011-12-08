@@ -25,6 +25,9 @@ public class MessageHandler implements IAisHandler {
 	public synchronized void receive(AisMessage aisMessage) {
 		// Make new queueEntry
 		QueueEntry queueEntry = new QueueEntry(aisMessage, new Date());
+		
+		// TODO how to determine source
+		queueEntry.setSource("LIVE");
 
 		// Try to add to queue
 		try {
