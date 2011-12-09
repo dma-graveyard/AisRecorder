@@ -30,6 +30,7 @@ public class Settings {
 	private int liveTargetTtl;
 	private int satTargetTtl;
 	private int pastTrackTime;
+	private int pastTrackMinDist;
 
 	public Settings() {
 
@@ -62,6 +63,8 @@ public class Settings {
 			reader.addProprietaryFactory(new GatehouseFactory());
 			
 			aisSources.put(name, reader);
+			
+			LOG.info("Added TCP reader " + name + " (" + hostsStr + ")");			
 		}
 		
 		// Determine doublet filtering
@@ -91,6 +94,9 @@ public class Settings {
 		
 		// Determine past track time
 		pastTrackTime = getInt("past_track_time", "7200");
+		
+		// Determine min dist between track points
+		pastTrackMinDist = getInt("past_track_min_dist", "100");
 	}
 	
 	public Properties getProps() {
@@ -152,6 +158,10 @@ public class Settings {
 	
 	public int getPastTrackTime() {
 		return pastTrackTime;
+	}
+	
+	public int getPastTrackMinDist() {
+		return pastTrackMinDist;
 	}
 	
 	public void setPastTrackTime(int pastTrackTime) {

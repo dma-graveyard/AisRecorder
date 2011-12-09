@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.ibatis.io.Resources;
@@ -49,6 +51,9 @@ public class DatabaseUpdater extends Thread {
 	private SqlSessionFactory sqlSessionFactory;
 	private SqlSession session;
 	private PastTrackCleanup pastTrackCleanup;
+	private Map<Integer, GeoLocation> locationCache = new HashMap<Integer, GeoLocation>();
+	private long trackPointCount = 0;
+	private long skippedTrackPointCount = 0;
 
 	public DatabaseUpdater(BlockingQueue<QueueEntry> queue, Settings settings) {
 		try {
@@ -309,6 +314,23 @@ public class DatabaseUpdater extends Thread {
 		if (vesselPosition.getLat() == null || vesselPosition.getLon() == null) {
 			return;
 		}
+
+		if (trackPointCount % 1000 == 0) {
+			LOG.debug("Track points / skipped (" + trackPointCount + "/" + skippedTrackPointCount + ")");
+		}
+		trackPointCount++;
+		
+		// Compare position to cached location and maybe skip location registration 
+		GeoLocation cachedLocation = locationCache.get(vesselTarget.getMmsi());
+		GeoLocation newLocation = new GeoLocation(vesselPosition.getLat(), vesselPosition.getLon());
+		
+		if (cachedLocation != null) {
+			double dist = cachedLocation.getRhumbLineDistance(newLocation);
+			if (dist < settings.getPastTrackMinDist()) {
+				skippedTrackPointCount++;
+				return;
+			}
+		}
 		
 		Double cog = vesselPosition.getCog();
 		Double sog = vesselPosition.getSog();
@@ -334,7 +356,12 @@ public class DatabaseUpdater extends Thread {
 		aisVesselTrack.setSog(sog);
 		
 		// Insert past track
-		aisVesselTrackMapper.insert(aisVesselTrack);		
+		aisVesselTrackMapper.insert(aisVesselTrack);	
+		
+		// Insert into track cache
+		locationCache.put(vesselTarget.getMmsi(), newLocation);
+
+		
 	}
 		
 	private void staticHandle(QueueEntry queueEntry, AisVesselTarget vesselTarget) {

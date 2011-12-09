@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 
 import dk.frv.ais.handler.IAisHandler;
 import dk.frv.ais.message.AisMessage;
+import dk.frv.ais.proprietary.IProprietarySourceTag;
 
 public class MessageHandler implements IAisHandler {
 
@@ -26,8 +27,17 @@ public class MessageHandler implements IAisHandler {
 		// Make new queueEntry
 		QueueEntry queueEntry = new QueueEntry(aisMessage, new Date());
 		
-		// TODO how to determine source
-		queueEntry.setSource("LIVE");
+		// Try to determine source
+		String source = "LIVE";
+		IProprietarySourceTag tag = aisMessage.getSourceTag();
+		if (tag != null) {
+			String region = tag.getRegion();
+			if (region.equals("802") || region.equals("804")) {
+				LOG.debug("SAT message!");
+				source = "SAT";
+			}
+		}
+		queueEntry.setSource(source);
 
 		// Try to add to queue
 		try {
@@ -36,7 +46,7 @@ public class MessageHandler implements IAisHandler {
 		} catch (IllegalStateException e) {
 			overflowMessages++;
 			Date now = new Date();			
-			if (now.getTime() - lastInsertErrorReported.getTime() > 5000) {
+			if (now.getTime() - lastInsertErrorReported.getTime() > 60000) {
 				lastInsertErrorReported = now;
 				LOG.error("Failed to insert message to queue: Queue overflow (" + overflowMessages + "/" + queuedMessages + ")");
 			}
