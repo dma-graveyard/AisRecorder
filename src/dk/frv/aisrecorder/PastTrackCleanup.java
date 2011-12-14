@@ -9,19 +9,17 @@ import org.apache.log4j.Logger;
 import dk.frv.aisrecorder.persistence.mapper.AisVesselTrackMapper;
 
 public class PastTrackCleanup extends Thread {
-	
+
 	private static final Logger LOG = Logger.getLogger(PastTrackCleanup.class);
-	
-	private static final long PAST_TRACK_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 min
-	
+
+	private static final long PAST_TRACK_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 min																			
+
 	private SqlSessionFactory sqlSessionFactory;
-	private int pastTrackTime;
-	
-	public PastTrackCleanup(SqlSessionFactory sqlSessionFactory, int pastTrackTime) {		
+
+	public PastTrackCleanup(SqlSessionFactory sqlSessionFactory) {
 		this.sqlSessionFactory = sqlSessionFactory;
-		this.pastTrackTime = pastTrackTime;
 	}
-	
+
 	@Override
 	public void run() {
 		while (true) {
@@ -33,22 +31,19 @@ public class PastTrackCleanup extends Thread {
 			}
 		}
 	}
-	
-	
+
 	private void pastTrackCleanup() {
-		long now = System.currentTimeMillis();
-		Date cleanupDate = new Date(now - pastTrackTime * 1000);
+		Date now = new Date();
 
 		SqlSession session = sqlSessionFactory.openSession(false);
 		try {
 			AisVesselTrackMapper aisVesselTrackMapper = session.getMapper(AisVesselTrackMapper.class);
-			int deleted = aisVesselTrackMapper.deleteOld(cleanupDate);
+			int deleted = aisVesselTrackMapper.deleteOld(now);
 			LOG.debug("Past track deleted: " + deleted);
 			session.commit();
 		} finally {
 			session.close();
 		}
 	}
-
 
 }

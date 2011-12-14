@@ -74,8 +74,10 @@ CREATE TABLE ais_vessel_track (
 	sog DOUBLE NOT NULL,
 	cog DOUBLE NOT NULL,
 	time DATETIME NOT NULL,
+	valid_to DATETIME NOT NULL,
 	created DATETIME NOT NULL,
-	INDEX(mmsi, time)
+	INDEX(mmsi, time),
+	INDEX(valid_to)
 ) ENGINE = innoDB;
 
 -- Extended class A position information

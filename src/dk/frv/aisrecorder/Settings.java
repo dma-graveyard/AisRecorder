@@ -29,7 +29,8 @@ public class Settings {
 	private String dbPassword;
 	private int liveTargetTtl;
 	private int satTargetTtl;
-	private int pastTrackTime;
+	private int pastTrackTimeLive;
+	private int pastTrackTimeSat;
 	private int pastTrackMinDist;
 
 	public Settings() {
@@ -92,8 +93,11 @@ public class Settings {
 		// Determine SAT target TTL
 		satTargetTtl = getInt("sat_target_ttl", "172800");
 		
-		// Determine past track time
-		pastTrackTime = getInt("past_track_time", "7200");
+		// Determine LIVE past track time
+		pastTrackTimeLive = getInt("past_track_time_live", "7200");
+		
+		// Determine SAT past track time
+		pastTrackTimeSat = getInt("past_track_time_sat", "129600");
 		
 		// Determine min dist between track points
 		pastTrackMinDist = getInt("past_track_min_dist", "100");
@@ -155,17 +159,17 @@ public class Settings {
 	public int getSatTargetTtl() {
 		return satTargetTtl;
 	}
-	
-	public int getPastTrackTime() {
-		return pastTrackTime;
-	}
-	
+		
 	public int getPastTrackMinDist() {
 		return pastTrackMinDist;
 	}
 	
-	public void setPastTrackTime(int pastTrackTime) {
-		this.pastTrackTime = pastTrackTime;
+	public int getPastTrackTimeLive() {
+		return pastTrackTimeLive;
 	}
 	
+	public int getPastTrackTimeSat() {
+		return pastTrackTimeSat;
+	}
+		
 }

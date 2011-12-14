@@ -67,7 +67,7 @@ public class DatabaseUpdater extends Thread {
 		this.settings = settings;
 		this.queue = queue;
 		this.batchSize = settings.getBatchSize();
-		pastTrackCleanup = new PastTrackCleanup(sqlSessionFactory, settings.getPastTrackTime());
+		pastTrackCleanup = new PastTrackCleanup(sqlSessionFactory);
 		pastTrackCleanup.start();
 	}
 
@@ -315,7 +315,7 @@ public class DatabaseUpdater extends Thread {
 			return;
 		}
 
-		if (trackPointCount % 1000 == 0) {
+		if (trackPointCount % 100000 == 0) {
 			LOG.debug("Track points / skipped (" + trackPointCount + "/" + skippedTrackPointCount + ")");
 		}
 		trackPointCount++;
@@ -347,11 +347,21 @@ public class DatabaseUpdater extends Thread {
 		aisVesselTrack.setLat(vesselPosition.getLat());
 		aisVesselTrack.setLon(vesselPosition.getLon());
 		// Time is source timestamp if it exists
-		if (vesselPosition.getSourceTimestamp() != null) {
-			aisVesselTrack.setTime(vesselPosition.getSourceTimestamp());
+//		if (vesselPosition.getSourceTimestamp() != null) {
+//			aisVesselTrack.setTime(vesselPosition.getSourceTimestamp());
+//		} else {
+//			aisVesselTrack.setTime(queueEntry.getReceived());
+//		}
+		// Source timestamp seems too uncertain
+		aisVesselTrack.setTime(queueEntry.getReceived());		
+		long validTo = aisVesselTrack.getTime().getTime();
+		// Determine valid to based on source
+		if (vesselTarget.getSource().equals("SAT")) {
+			validTo += settings.getPastTrackTimeSat() * 1000;
 		} else {
-			aisVesselTrack.setTime(queueEntry.getReceived());
+			validTo += settings.getPastTrackTimeLive() * 1000;
 		}
+		aisVesselTrack.setValidTo(new Date(validTo));
 		aisVesselTrack.setCog(cog);
 		aisVesselTrack.setSog(sog);
 		
