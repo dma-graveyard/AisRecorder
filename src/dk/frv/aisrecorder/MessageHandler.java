@@ -33,7 +33,6 @@ public class MessageHandler implements IAisHandler {
 		if (tag != null) {
 			String region = tag.getRegion();
 			if (region.equals("802") || region.equals("804")) {
-				LOG.debug("SAT message!");
 				source = "SAT";
 			}
 		}
