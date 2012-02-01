@@ -2,6 +2,7 @@
 <project name="aisrecorder" default="compile">
 
 	<property name="lib" value="${basedir}/lib" />
+	<property name="bin" value="${basedir}/bin" />
 
 	<property name="build.dir" value="${basedir}/build" />
 	<property name="build.classes.dir" value="${build.dir}/classes" />
@@ -46,5 +47,28 @@
 			</classpath>
 		</java>
 	</target>
+	
+	<target name="binclean">
+		<delete dir="${bin}/lib" />
+		<delete dir="${bin}/log" />
+	</target>
+	
+	<target name="bin" depends="compile">
+		<mkdir dir="${bin}/lib" />
+		<mkdir dir="${bin}/log" />
+		<copy todir="${bin}/lib">
+			<fileset dir="${lib}">
+				<include name="**/*.jar" />
+			</fileset>
+		</copy>
+		<jar file="${bin}/lib/aisrecorder.jar">
+			<fileset dir="${build.classes.dir}" />
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Main-Class" value="dk.frv.aisrecorder.AisRecorder" />
+			</manifest>
+		</jar>
+	</target>
+
 
 </project>
