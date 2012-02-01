@@ -7,11 +7,23 @@
 	<!-- CONSOLE -->
 	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
 		<param name="Target" value="System.out" />
-		<param name="Threshold" value="INFO" />
+		<param name="Threshold" value="ERROR" />
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%d{ABSOLUTE} %-5p [%c] %m%n" />
 		</layout>
 	</appender>
+
+	<appender name="LOGFILE" class="org.apache.log4j.RollingFileAppender">
+		<param name="File" value="log/aisrecorder.log" />
+		<param name="Append" value="true" />
+		<param name="MaxFileSize" value="1024KB" />
+		<param name="MaxBackupIndex" value="3" />
+		<param name="Threshold" value="INFO" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%c] %m%n" />
+		</layout>
+	</appender>
+
 
 	<logger name="org.hibernate">
 		<level value="ERROR" />
@@ -31,6 +43,7 @@
 
 	<root>
 		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="LOGFILE" />
 	</root>
 
 </log4j:configuration>
