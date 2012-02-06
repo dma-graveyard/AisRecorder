@@ -24,7 +24,7 @@ CREATE TABLE ais_vessel_target (
 	INDEX(id),
 	INDEX(country),
 	INDEX(valid_to)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 -- Raw AIS message table
 CREATE TABLE ais_message (
@@ -35,7 +35,7 @@ CREATE TABLE ais_message (
 	source_timestamp DATETIME NULL,
 	received DATETIME NOT NULL,
 	created DATETIME NOT NULL
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 -- AIS position message information
 CREATE TABLE ais_pos_message (
@@ -44,7 +44,7 @@ CREATE TABLE ais_pos_message (
 	lon DOUBLE NULL,
 	INDEX(lat, lon),
 	FOREIGN KEY (ais_message) REFERENCES ais_message(id)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 	
 -- Current vessel target position
 CREATE TABLE ais_vessel_position (
@@ -63,7 +63,7 @@ CREATE TABLE ais_vessel_position (
 	INDEX(lat,lon),
 	INDEX(received),
 	FOREIGN KEY (mmsi) REFERENCES ais_vessel_target(mmsi)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 -- Vessels track
 CREATE TABLE ais_vessel_track (
@@ -78,7 +78,7 @@ CREATE TABLE ais_vessel_track (
 	created DATETIME NOT NULL,
 	INDEX(mmsi, time),
 	INDEX(valid_to)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 -- Extended class A position information
 CREATE TABLE ais_class_a_position (
@@ -87,7 +87,7 @@ CREATE TABLE ais_class_a_position (
 	rot DOUBLE NULL,	
 	special_man_indicator TINYINT NOT NULL,
 	FOREIGN KEY (mmsi) REFERENCES ais_vessel_position(mmsi)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 -- Current vessel target statics
 CREATE TABLE ais_vessel_static (
@@ -104,7 +104,7 @@ CREATE TABLE ais_vessel_static (
 	received DATETIME NOT NULL,
 	created DATETIME NOT NULL,
 	FOREIGN KEY (mmsi) REFERENCES ais_vessel_target(mmsi)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 -- Extended class A statics
 CREATE TABLE ais_class_a_static (
@@ -117,7 +117,7 @@ CREATE TABLE ais_class_a_static (
 	destination VARCHAR(32) NULL,
 	dte TINYINT NOT NULL,
 	FOREIGN KEY (mmsi) REFERENCES ais_vessel_static(mmsi)
-) ENGINE = innoDB;
+) ENGINE = myISAM;
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
