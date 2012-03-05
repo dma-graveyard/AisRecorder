@@ -25,7 +25,10 @@ import dk.frv.ais.message.AisMessage24;
 import dk.frv.ais.message.AisMessage5;
 import dk.frv.ais.message.AisPositionMessage;
 import dk.frv.ais.message.ShipTypeCargo;
+import dk.frv.ais.proprietary.DmaSourceTag;
+import dk.frv.ais.proprietary.GatehouseSourceTag;
 import dk.frv.ais.proprietary.IProprietarySourceTag;
+import dk.frv.ais.proprietary.IProprietaryTag;
 import dk.frv.aisrecorder.persistence.domain.AisClassAPosition;
 import dk.frv.aisrecorder.persistence.domain.AisClassAStatic;
 import dk.frv.aisrecorder.persistence.domain.AisVesselPosition;
@@ -148,6 +151,39 @@ public class DatabaseUpdater extends Thread {
 			return;
 		}
 		
+		// Determine tagging
+		String sourceType = "LIVE";
+		String sourceCountry = null;
+		String sourceRegion = null;
+		String sourceBs = null;
+		String sourceSystem = null;
+		
+		if (aisMessage.getTags() != null) {
+			for (IProprietaryTag tag : aisMessage.getTags()) {
+				if (tag instanceof DmaSourceTag) {
+					DmaSourceTag dmaSourceTag = (DmaSourceTag)tag;
+					sourceSystem = dmaSourceTag.getSourceName();
+				} else if (tag instanceof GatehouseSourceTag) {
+					GatehouseSourceTag ghTag = (GatehouseSourceTag)tag;
+					sourceRegion = ghTag.getRegion();
+					if (sourceRegion != null) {
+						if (sourceRegion.length() == 0) {
+							sourceRegion = null;
+						} else {
+							// TODO This mapping should come from somewhere
+							if (sourceRegion.equals("802") || sourceRegion.equals("804")) {
+								sourceType = "SAT";
+							}
+						}
+					}
+					sourceCountry = ghTag.getCountry().getThreeLetter();
+					if (ghTag.getBaseMmsi() != null) {
+						sourceBs = Long.toString(ghTag.getBaseMmsi());
+					}
+				}
+			}
+		}
+
 		// Get or create AisVesselTarget
 		AisVesselTargetMapper mapper = session.getMapper(AisVesselTargetMapper.class);
 		AisVesselTarget vesselTarget = mapper.selectByPrimaryKey((int) aisMessage.getUserId());
@@ -173,12 +209,16 @@ public class DatabaseUpdater extends Thread {
 			}
 		}
 		
-		// Determine source
-		vesselTarget.setSource(queueEntry.getSource());
+		// Set source columns
+		vesselTarget.setSourceType(sourceType);
+		vesselTarget.setSourceCountry(sourceCountry);
+		vesselTarget.setSourceRegion(sourceRegion);
+		vesselTarget.setSourceBs(sourceBs);
+		vesselTarget.setSourceSystem(sourceSystem);
 		
 		// Set valid to based on source 
 		long targetTtl = settings.getLiveTargetTtl();
-		if (vesselTarget.getSource().equals("SAT")) {
+		if (vesselTarget.getSourceType().equals("SAT")) {
 			targetTtl = settings.getSatTargetTtl();
 		}
 		Date validTo = new Date(queueEntry.getReceived().getTime() + targetTtl * 1000);
@@ -358,7 +398,7 @@ public class DatabaseUpdater extends Thread {
 		aisVesselTrack.setTime(queueEntry.getReceived());		
 		long validTo = aisVesselTrack.getTime().getTime();
 		// Determine valid to based on source
-		if (vesselTarget.getSource().equals("SAT")) {
+		if (vesselTarget.getSourceType().equals("SAT")) {
 			validTo += settings.getPastTrackTimeSat() * 1000;
 		} else {
 			validTo += settings.getPastTrackTimeLive() * 1000;

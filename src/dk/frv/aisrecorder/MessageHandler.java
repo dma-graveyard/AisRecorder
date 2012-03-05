@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 
 import dk.frv.ais.handler.IAisHandler;
 import dk.frv.ais.message.AisMessage;
-import dk.frv.ais.proprietary.IProprietarySourceTag;
 
 public class MessageHandler implements IAisHandler {
 
@@ -27,17 +26,6 @@ public class MessageHandler implements IAisHandler {
 		// Make new queueEntry
 		QueueEntry queueEntry = new QueueEntry(aisMessage, new Date());
 		
-		// Try to determine source
-		String source = "LIVE";
-		IProprietarySourceTag tag = aisMessage.getSourceTag();
-		if (tag != null) {
-			String region = tag.getRegion();
-			if (region.equals("802") || region.equals("804")) {
-				source = "SAT";
-			}
-		}
-		queueEntry.setSource(source);
-
 		// Try to add to queue
 		try {
 			queue.add(queueEntry);

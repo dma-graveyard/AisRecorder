@@ -8,7 +8,6 @@ public class QueueEntry {
 
 	private AisMessage aisMessage;
 	private Date received;
-	private String source;
 
 	public QueueEntry(AisMessage aisMessage, Date received) {
 		this.aisMessage = aisMessage;
@@ -31,12 +30,4 @@ public class QueueEntry {
 		this.received = received;
 	}
 	
-	public String getSource() {
-		return source;
-	}
-	
-	public void setSource(String source) {
-		this.source = source;
-	}
-
 }
