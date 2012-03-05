@@ -100,6 +100,7 @@ public class DatabaseUpdater extends Thread {
 			try {
 				batchHandle(batch);
 			} catch (Exception e) {
+				e.printStackTrace();
 				LOG.error("Error while handling batch: " + e.getMessage());				
 			}
 
@@ -180,7 +181,8 @@ public class DatabaseUpdater extends Thread {
 		if (vesselTarget.getSource().equals("SAT")) {
 			targetTtl = settings.getSatTargetTtl();
 		}
-		vesselTarget.setValidTo(new Date(queueEntry.getReceived().getTime() + targetTtl * 1000));
+		Date validTo = new Date(queueEntry.getReceived().getTime() + targetTtl * 1000);
+		vesselTarget.setValidTo(validTo);
 		
 		// Insert or update
 		if (vesselTarget.getId() == null) {

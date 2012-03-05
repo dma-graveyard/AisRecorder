@@ -9,6 +9,7 @@ import java.util.Properties;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
+import dk.frv.ais.proprietary.DmaFactory;
 import dk.frv.ais.proprietary.GatehouseFactory;
 import dk.frv.ais.reader.RoundRobinAisTcpReader;
 
@@ -61,6 +62,7 @@ public class Settings {
 			reader.setReconnectInterval(getInt("ais_source_reconnect_interval." + name, "5") * 1000);
 			
 			// Register proprietary handlers
+			reader.addProprietaryFactory(new DmaFactory());
 			reader.addProprietaryFactory(new GatehouseFactory());
 			
 			aisSources.put(name, reader);
