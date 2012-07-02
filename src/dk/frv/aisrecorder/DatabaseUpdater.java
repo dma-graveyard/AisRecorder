@@ -171,7 +171,7 @@ public class DatabaseUpdater extends Thread {
 							sourceRegion = null;
 						} else {
 							// TODO This mapping should come from somewhere
-							if (sourceRegion.equals("802") || sourceRegion.equals("804")) {
+							if (sourceRegion.equals("802") || sourceRegion.equals("804") || sourceRegion.equals("808")) {
 								sourceType = "SAT";
 							}
 						}
